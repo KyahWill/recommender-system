@@ -185,11 +185,24 @@ def pack(data_loader_fn: Callable[[], List[tuple]],
     return n_user, n_item, train_data, test_data, topk_data
 
 
-def pack_kg(kg_loader_config: Tuple[str, Callable[[], List[tuple]], type], keep_all_head=True,
-            negative_sample_ratio=1, negative_sample_threshold=0, negative_sample_method='random',
-            split_test_ratio=0.4, shuffle_before_split=True, split_ensure_positive=False,
-            topk_sample_user=100) -> Tuple[int, int, int, int, List[Tuple[int, int, int]],
-                                           List[Tuple[int, int, int]], List[Tuple[int, int, int]], TopkData]:
+def pack_kg(kg_loader_config: Tuple[str, Callable[[], List[tuple]], type],
+            keep_all_head=True,
+            negative_sample_ratio=1,
+            negative_sample_threshold=0,
+            negative_sample_method='random',
+            split_test_ratio=0.4,
+            shuffle_before_split=True,
+            split_ensure_positive=False,
+            topk_sample_user=100) -> \
+            Tuple[
+                int,
+                int,
+                int,
+                int,
+                List[Tuple[int, int, int]],
+                List[Tuple[int, int, int]],
+                List[Tuple[int, int, int]],
+                TopkData]:
     """
     联合读数据和知识图谱，训练集测试集切分，准备TopK评估数据
 
@@ -205,6 +218,7 @@ def pack_kg(kg_loader_config: Tuple[str, Callable[[], List[tuple]], type], keep_
     :return: 用户数量，物品数量，实体数量，关系数量，训练集，测试集，知识图谱，用于TopK评估数据
     """
     from Recommender_System.data.kg_loader import _read_data_with_kg
+
     data, kg, n_user, n_item, n_entity, n_relation = _read_data_with_kg(
         kg_loader_config, negative_sample_ratio, negative_sample_threshold, negative_sample_method, keep_all_head)
     train_data, test_data = split(data, split_test_ratio, shuffle_before_split, split_ensure_positive)

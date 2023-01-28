@@ -5,7 +5,7 @@ class CrossLayer(tf.keras.layers.Layer):
     def call(self, inputs):
         v, e = inputs  # (batch, dim)
         v = tf.expand_dims(v, axis=2)  # (batch, dim, 1)
-        e = tf.expand_dims(e, axis=1)  # (batch, 1, dim) deep = tf.keras.layers.Dense(dim, kernel_regulizer=l2)(deep)
+        e = tf.expand_dims(e, axis=1)  # (batch, 1, dim)
         c_matrix = tf.matmul(v, e)  # (batch, dim, dim)
         c_matrix_t = tf.transpose(c_matrix, perm=[0, 2, 1])  # (batch, dim, dim)
         return c_matrix, c_matrix_t
@@ -28,9 +28,8 @@ class CompressLayer(tf.keras.layers.Layer):
         c_matrix = tf.reshape(c_matrix, shape=[-1, self.dim])  # (batch * dim, dim)
         c_matrix_t = tf.reshape(c_matrix_t, shape=[-1, self.dim])  # (batch * dim, dim)
 
-        return tf.keras.layers.Add()([tf.matmul(c_matrix, self.weight), tf.matmul(c_matrix_t, self.weight_t)]) + self.bias
-                # tf.reshape(,
-                #           shape=[-1, self.dim]) + self.bias  # (batch, dim)
+        return tf.reshape(tf.matmul(c_matrix, self.weight) + tf.matmul(c_matrix_t, self.weight_t),
+                          shape=[-1, self.dim]) + self.bias  # (batch, dim)
 
 
 def cross_compress_unit(inputs, weight_regularizer):

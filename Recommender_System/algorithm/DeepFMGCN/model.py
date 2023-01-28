@@ -1,6 +1,6 @@
 from typing import Tuple
 import tensorflow as tf
-from Recommender_System.algorithm.MKR.layer import cross_compress_unit
+from Recommender_System.algorithm.DeepFMGCN.layer import cross_compress_unit
 from Recommender_System.utility.decorator import logger
 
 
@@ -14,6 +14,7 @@ def MKR_model(
         L=1,
         H=1,
         l2=1e-6) -> Tuple[tf.keras.Model, tf.keras.Model]:
+
     l2 = tf.keras.regularizers.l2(l2)
 
     user_id = tf.keras.Input(shape=(), name='user_id', dtype=tf.int32)
@@ -32,14 +33,24 @@ def MKR_model(
     h = entity_embedding(head_id)
     r = relation_embedding(relation_id)
     t = entity_embedding(tail_id)
+    print(type(user_id))
+    print(type(item_id))
+    print(type(user_embedding))
+    print(type(item_embedding))
+    user_bias = tf.keras.layers.Embedding(n_user, 1, embeddings_initializer='zeros')(user_id)
+    item_bias = tf.keras.layers.Embedding(n_item, 1, embeddings_initializer='zeros')(item_id)
+
+    fm = tf.reduce_sum(u * i, axis=1, keepdims=True) + user_bias + item_bias
+    deep = tf.concat([u, i], axis=1)
 
     for _ in range(L):
         u = tf.keras.layers.Dense(dim, activation='relu', kernel_regularizer=l2)(u)
         i, h = cross_compress_unit(inputs=(i, h), weight_regularizer=l2)
         t = tf.keras.layers.Dense(dim, activation='relu', kernel_regularizer=l2)(t)
-
+        deep = tf.keras.layers.Dense(dim, activation='relu', kernel_regularizer=l2)(deep)
+    deep = tf.keras.layers.Dense(1, kernel_regularizer=l2)(deep)
     # rs = tf.concat([u, i], axis=1)
-    rs = tf.keras.activations.sigmoid(tf.reduce_sum(u * i, axis=1, keepdims=True))
+    rs = tf.keras.activations.sigmoid(fm+deep)
     kge = tf.concat([h, r], axis=1)
     for _ in range(H - 1):
         # rs = tf.keras.layers.Dense(dim * 2, activation='relu', kernel_regularizer=reg_l2(l2))(rs)

@@ -11,7 +11,10 @@ def DeepFM_model(n_user: int, n_item: int, dim=8, layers=[16, 16, 16], l2=1e-6) 
 
     item_id = tf.keras.Input(shape=(), name='item_id', dtype=tf.int32)
     item_embedding = tf.keras.layers.Embedding(n_item, dim, embeddings_regularizer=l2)(item_id)
-
+    print(type(user_id))
+    print(type(item_id))
+    print(type(user_embedding))
+    print(type(item_embedding))
     user_bias = tf.keras.layers.Embedding(n_user, 1, embeddings_initializer='zeros')(user_id)
     item_bias = tf.keras.layers.Embedding(n_item, 1, embeddings_initializer='zeros')(item_id)
     fm = tf.reduce_sum(user_embedding * item_embedding, axis=1, keepdims=True) + user_bias + item_bias
