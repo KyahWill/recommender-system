@@ -18,6 +18,7 @@ def _read_item_id2entity_id_file(kg_directory: str, item_id_type: type = int) ->
             entity_id = int(values[1])
             item_to_entity[item_id] = entity_id
             entity_to_item[entity_id] = item_id
+        print(item_to_entity)
     return item_to_entity, entity_to_item
 
 
@@ -31,7 +32,7 @@ def _read_kg_file(kg_directory: str, entity_id_old2new: Dict[int, int], keep_all
     with open(os.path.join(kg_path, kg_directory, 'kg.txt')) as f:
         for line in f.readlines():
             values = line.strip().split('\t')
-            head_old, relation_old, tail_old = int(values[0]), values[1], int(values[2])
+            head_old, relation_old, tail_old = int(values[0]), int(values[1]), values[2]
 
             if head_old not in entity_id_old2new:
                 if keep_all_head:
@@ -64,12 +65,18 @@ def _read_data_with_kg(kg_loader_config: Tuple[str, Callable[[], List[tuple]], t
     kg_directory, data_loader_fn, item_id_type = kg_loader_config
     old_item_to_old_entity, old_entity_to_old_item = _read_item_id2entity_id_file(kg_directory, item_id_type)
     data = data_loader_fn()
+
     data = [d for d in data if d[1] in old_item_to_old_entity]  # 去掉知识图谱中不存在的物品
+
     data = data_process.negative_sample(data, negative_sample_ratio, negative_sample_threshold, negative_sample_method)
-    data, n_user, n_item, _, item_id_old2new = data_process.neaten_id(data)
-    entity_id_old2new = {old_entity: item_id_old2new[old_item] for old_entity, old_item in old_entity_to_old_item.items()}
-    kg, n_entity, n_relation = _read_kg_file(kg_directory, entity_id_old2new, keep_all_head)
-    return data, kg, n_user, n_item, n_entity, n_relation
+
+    # data, n_user, n_item, _, item_id_old2new = data_process.neaten_id(data)
+    n_user= data_process.get_things(data)
+
+    # entity_id_old2new = {old_entity: item_id_old2new[old_item] for old_entity, old_item in old_entity_to_old_item.items()}
+    # kg, n_entity, n_relation = _read_kg_file(kg_directory, entity_id_old2new, keep_all_head) old one
+    kg, n_entity, n_relation = _read_kg_file(kg_directory, old_entity_to_old_item, keep_all_head)
+    return data, kg, n_user, n_entity, n_entity, n_relation
 
 
 # kg_loader_configs: (kg_directory, data_loader_fn, item_id_type)
@@ -79,7 +86,8 @@ lastfm_kg15k = 'lastfm-kg15k', data_loader.lastfm, int
 ml1m_kg20k = 'ml1m-kg20k', data_loader.ml1m, int
 ml1m_kg1m = 'ml1m-kg1m', data_loader.ml1m, int
 ml20m_kg500k = 'ml20m-kg500k', data_loader.ml20m, int
-
+phil_juris = 'phil-juris', data_loader.phil_juris, int
 
 if __name__ == '__main__':
-    data, kg, n_user, n_item, n_entity, n_relation = _read_data_with_kg(ml1m_kg1m)
+    data, kg, n_user, n_item, n_entity, n_relation = _read_data_with_kg(phil_juris)
+    # print(data)

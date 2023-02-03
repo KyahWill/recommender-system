@@ -46,6 +46,7 @@ def train(model_rs: tf.keras.Model, model_kge: tf.keras.Model, train_data: List[
         label = tf.constant([0] * len(kg), dtype=tf.float32)
         return {'item_id': item_id, 'head_id': head_id, 'relation_id': relation_id, 'tail_id': tail_id}, label
 
+    # print(xy(train_data))
     train_ds = tf.data.Dataset.from_tensor_slices(xy(train_data)).shuffle(len(train_data)).batch(batch)
     test_ds = tf.data.Dataset.from_tensor_slices(xy(test_data)).batch(batch)
     kg_ds = tf.data.Dataset.from_tensor_slices(xy_kg(kg)).shuffle(len(kg)).batch(batch)
@@ -53,8 +54,12 @@ def train(model_rs: tf.keras.Model, model_kge: tf.keras.Model, train_data: List[
     model_rs.compile(optimizer=optimizer_rs, loss='binary_crossentropy', metrics=['AUC', 'Precision', 'Recall'])
     model_kge.compile(optimizer=optimizer_kge, loss=lambda y_true, y_pre: y_pre)
 
+    print(train_data)
+    print(test_data)
     for epoch in range(epochs):
         model_rs.fit(train_ds, epochs=epoch + 1, verbose=0, validation_data=test_ds,
                      callbacks=[RsCallback(topk_data, _get_score_fn(model_rs))], initial_epoch=epoch)
         if epoch % kge_interval == 0:
             model_kge.fit(kg_ds, epochs=epoch + 1, verbose=0, callbacks=[_KgeCallback()], initial_epoch=epoch)
+
+

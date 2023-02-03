@@ -31,6 +31,7 @@ def negative_sample(data: List[tuple], ratio=1, threshold=0, method='random') ->
 
     # 得到每个用户正样本与非正样本集合
     user_positive_set, user_unpositive_set = defaultdict(set), defaultdict(set)
+
     for d in data:
         user_id, item_id, weight = d[0], d[1], d[2]
         (user_positive_set if weight >= threshold else user_unpositive_set)[user_id].add(item_id)
@@ -39,6 +40,7 @@ def negative_sample(data: List[tuple], ratio=1, threshold=0, method='random') ->
     user_list = list(user_positive_set.keys())
     arg_positive_set = [user_positive_set[user_id] for user_id in user_list]
     arg_unpositive_set = [user_unpositive_set[user_id] for user_id in user_list]
+
     from concurrent.futures import ProcessPoolExecutor
     with ProcessPoolExecutor(max_workers=os.cpu_count()//2, initializer=_negative_sample_init, initargs=(ratio, negative_sample_weight)) as executor:
         sampled_negative_items = executor.map(_negative_sample, arg_positive_set, arg_unpositive_set, chunksize=100)
@@ -47,8 +49,10 @@ def negative_sample(data: List[tuple], ratio=1, threshold=0, method='random') ->
     new_data = []
     for user_id, negative_items in zip(user_list, sampled_negative_items):
         new_data.extend([(user_id, item_id, 0) for item_id in negative_items])
+
     for user_id, positive_items in user_positive_set.items():
         new_data.extend([(user_id, item_id, 1) for item_id in positive_items])
+
     return new_data
 
 
@@ -91,6 +95,16 @@ def neaten_id(data: List[tuple]) -> Tuple[List[Tuple[int, int, int]], int, int, 
             n_item += 1
         new_data.append((user_id_old2new[user_id_old], item_id_old2new[item_id_old], label))
     return new_data, n_user, n_item, user_id_old2new, item_id_old2new
+
+def get_things(data: List[tuple]) -> Tuple[List[Tuple[int, int, int]], int, int, dict, dict]:
+    new_data = []
+    n_user, n_item = 0, 0
+    user_id_old2new, item_id_old2new = {}, {}
+    for user_id_old, item_id_old, label in data:
+        if user_id_old not in user_id_old2new:
+            user_id_old2new[user_id_old] = user_id_old
+            n_user += 1
+    return n_user
 
 
 @logger('开始数据切分，', ('test_ratio', 'shuffle', 'ensure_positive'))
@@ -221,6 +235,8 @@ def pack_kg(kg_loader_config: Tuple[str, Callable[[], List[tuple]], type],
 
     data, kg, n_user, n_item, n_entity, n_relation = _read_data_with_kg(
         kg_loader_config, negative_sample_ratio, negative_sample_threshold, negative_sample_method, keep_all_head)
-    train_data, test_data = split(data, split_test_ratio, shuffle_before_split, split_ensure_positive)
+
+    train_data, test_data = \
+        split(data, split_test_ratio, shuffle_before_split, split_ensure_positive)
     topk_data = prepare_topk(train_data, test_data, n_user, n_item, topk_sample_user)
     return n_user, n_item, n_entity, n_relation, train_data, test_data, kg, topk_data

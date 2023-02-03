@@ -54,10 +54,21 @@ def _read_book_crossing() -> List[Tuple[int, str, int]]:
     return data
 
 
+def _read_phil_juris() -> List[Tuple[int,int,str]]:
+    data = []
+    with open(os.path.join(ds_path, 'phil-juris/data.csv'), 'r', encoding='utf-8') as f:
+        for line in f.readlines():
+            values = line.strip().split(',')
+            print(values)
+            user_id, juris_id, rating = int(values[0]), int(values[1]), int(values[2])
+            data.append((user_id, juris_id, rating))
+    return data
+
 @logger('开始读数据，', ('data_name', 'expect_length', 'expect_user', 'expect_item'))
 def _load_data(read_data_fn: Callable[[], List[tuple]], expect_length: int, expect_user: int, expect_item: int,
                data_name: str) -> List[tuple]:
     data = read_data_fn()
+    print(data)
     n_user, n_item = len(set(d[0] for d in data)), len(set(d[1] for d in data))
     assert len(data) == expect_length, data_name + ' length ' + str(len(data)) + ' != ' + str(expect_length)
     assert n_user == expect_user, data_name + ' user ' + str(n_user) + ' != ' + str(expect_user)
@@ -84,7 +95,10 @@ def lastfm() -> List[Tuple[int, int, int]]:
 def book_crossing() -> List[Tuple[int, str, int]]:
     return _load_data(_read_book_crossing, 1149780, 105283, 340555, 'Book-Crossing')
 
+def phil_juris() -> List[Tuple[int, int, str]]:
+    return _load_data(_read_phil_juris, 6, 4, 5, 'phil-juris')
 
 # 测试数据读的是否正确
 if __name__ == '__main__':
-    data = book_crossing()
+    phil_juris()
+    # print(data)

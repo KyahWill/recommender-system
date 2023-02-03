@@ -4,8 +4,8 @@ from Recommender_System.algorithm.DeepFMGCN.layer import cross_compress_unit
 from Recommender_System.utility.decorator import logger
 
 
-@logger('初始化MKR模型：', ('n_user', 'n_item', 'n_entity', 'n_relation', 'dim', 'L', 'H', 'l2'))
-def MKR_model(
+@logger('初始化DeepPM GCN模型：', ('n_user', 'n_item', 'n_entity', 'n_relation', 'dim', 'L', 'H', 'l2'))
+def DeepFM_model(
         n_user: int,
         n_item: int,
         n_entity: int,
@@ -33,10 +33,6 @@ def MKR_model(
     h = entity_embedding(head_id)
     r = relation_embedding(relation_id)
     t = entity_embedding(tail_id)
-    print(type(user_id))
-    print(type(item_id))
-    print(type(user_embedding))
-    print(type(item_embedding))
     user_bias = tf.keras.layers.Embedding(n_user, 1, embeddings_initializer='zeros')(user_id)
     item_bias = tf.keras.layers.Embedding(n_item, 1, embeddings_initializer='zeros')(item_id)
 
@@ -48,6 +44,7 @@ def MKR_model(
         i, h = cross_compress_unit(inputs=(i, h), weight_regularizer=l2)
         t = tf.keras.layers.Dense(dim, activation='relu', kernel_regularizer=l2)(t)
         deep = tf.keras.layers.Dense(dim, activation='relu', kernel_regularizer=l2)(deep)
+
     deep = tf.keras.layers.Dense(1, kernel_regularizer=l2)(deep)
     # rs = tf.concat([u, i], axis=1)
     rs = tf.keras.activations.sigmoid(fm+deep)
@@ -63,14 +60,12 @@ def MKR_model(
 
 
 if __name__ == '__main__':
-    rs_model, kge_model = MKR_model(2, 2, 2, 2)
-    u = tf.constant([0, 1])
-    i = tf.constant([1, 0])
-    h = tf.constant([0, 1])
-    r = tf.constant([1, 0])
-    t = tf.constant([0, 1])
-    print(rs_model({'user_id': u, 'item_id': i, 'head_id': h}))
-    print(kge_model({'item_id': i, 'head_id': h, 'relation_id': r, 'tail_id': t}))
+    rs_model, kge_model = DeepFM_model(7, 7, 7, 7)
+    u = tf.constant([0, 1, 5, 6])
+    i = tf.constant([1, 0, 4, 6])
+    h = tf.constant([0, 1, 3, 6])
+    r = tf.constant([1, 0, 3, 4])
+    t = tf.constant([0, 1, 3, 4])
 
     ds = tf.data.Dataset.from_tensor_slices(({'item_id': i, 'head_id': h, 'relation_id': r, 'tail_id': t}, tf.constant([0] * 2))).batch(2)
     kge_model.compile(optimizer='adam', loss=lambda y_true, y_pre: y_pre)
