@@ -22,7 +22,11 @@ if __name__ == '__main__':
     train(model_rs, model_kge, train_data, test_data, kg, topk_data, kge_interval=2,
           optimizer_rs=Adam(0.02), optimizer_kge=Adam(0.01), epochs=3, batch=4096)
 
-    model_rs.save("model")
+    tf.saved_model.save(
+        model_rs,
+        "saved_model",
+        signatures=None,
+    )
     # n_user, n_item, n_entity, n_relation, train_data, test_data, kg, topk_data = data_process.pack_kg(kg_loader.lastfm_kg15k, keep_all_head=False)
     # model_rs, model_kge = DeepFM_model(n_user, n_item, n_entity, n_relation, dim=4, L=5, H=1, l2=1e-6)
     # train(model_rs, model_kge, train_data, test_data, kg, topk_data, kge_interval=2,
